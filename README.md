@@ -1,5 +1,5 @@
 # 506
 
-### Final Project
+### FinalProject
 
-### Code Portfolio
+### CodePortfolio
