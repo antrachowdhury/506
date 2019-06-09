@@ -1,4 +1,5 @@
 # 506
+Two folders containing R scripts for Final Project and Code Portfolio
 
 ### FinalProject
 
