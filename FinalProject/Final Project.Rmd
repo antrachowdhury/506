@@ -1,0 +1,130 @@
+---
+title: "ANLY 506 - Final Project"
+author: "Antra Chowdhury"
+date: "6/15/2019"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Aim of the study
+1) Identify the countries with highest population
+2) How has the population affected the income of the country?
+3) What is the impact of population on life expectancy?
+
+
+## Data Summary
+
+The given dataset "gapminder.csv" has 41284 observations and 6 variables. "Country" is a factor variable with 197 levels."Year" is an integer variable ranging from 1800 to 2015. "life" is a numeric variable rangine from 1 to 84.10 and has an median value of 35.12. "population" is a factor variable with 15260 levels. "income" is a integer variable ranging from 142 to 182668 and a median value of 1450. "region" is a factor variable with 6 levels. 
+
+```{r data, echo = FALSE}
+df <- read.csv(file="gapminder.csv",stringsAsFactors=FALSE)
+#nrow(df)
+#colnames(df)
+#str(df)
+#range(df$Year)
+#range(df$life)
+
+```
+
+## Data wrangling 
+There are about 25817 NULL values for population and 2341 NULL values for income. To solve for missing values for population, data from every 10 years will be used for the analysis. The observations with NULL income don't seem to be limited to a particular country or region and so it can be excluded from the analysis later.
+
+```{r wrangling, echo=FALSE}
+#sum(is.na(df$Country))
+#sum(is.na(df$Year))
+#sum(is.na(df$life))
+#sum(is.na(df$population))
+#sum(is.na(df$income))
+#sum(is.na(df$region))
+
+df_10yr <- subset(df, Year%%10==0)
+income_na <- subset(df_10yr, is.na(df_10yr$income)== TRUE)
+#str(income_na)
+#head(income_na)
+#library(plyr)
+#count(income_na, "Country")
+#count(income_na,"region")
+#count(income_na,"Year")
+df_10yr$population <- gsub(",","",df_10yr$population)
+df_10yr$population <- as.numeric(df_10yr$population)
+
+```
+
+## Aggregation
+By analyzing the population for different countries, it is observed that top 3 countries in terms of population is China, India and USA. 
+
+```{r aggregates, echo=FALSE}
+#max_pop <- aggregate(population~Country, data = df_10yr, max)
+#head(max_pop[order(-max_pop$population),])
+
+```
+## Plots
+
+Using time series plots, we can look at the change of population as the top 3 most populated countries in the dataset. For China (Fig. 1), it looks like the population starting accelerating around 1950. On the other hand, India (Fig. 3) had a gradual increase in population till 1900 and thereafter the population started accelerating. For USA (Fig. 5), the growth in population seems to be somewhat linear.
+
+The income in China (Fig. 2) seems to have been flat till 1990 despite the increase in population from 1950 and it was close to 10,000 in 2010. In India, the income (Fig. 4) started increasing in 1970s and it peaked to 4500 in 2010. In USA, the income increased gradually and it peaked at 50,000 in 2010.
+
+Figure 7 shows that the average life expectancy for United States is much higher than that of India or China.
+
+
+```{r plots, echo=FALSE}
+pop_china <- subset(df_10yr, df_10yr$Country == "China")
+#nrow(pop_china)
+suppressWarnings(library(ggplot2))
+p1 <- ggplot(data = pop_china, aes(x = Year, y = population))+ geom_line() 
+p1 + ggtitle("Fig. 1 - China population over time") + xlab("Year") + ylab("Population") + scale_y_continuous(labels = scales::comma)
+
+p2 <- ggplot(data = pop_china, aes(x = Year, y = income))+ geom_line() 
+p2 + ggtitle("Fig. 2 - China income over time") + xlab("Year") + ylab("Income") + scale_y_continuous(labels = scales::comma)
+
+pop_india <- subset(df_10yr, df_10yr$Country == "India")
+#nrow(pop_india)
+#library(ggplot2)
+p3 <- ggplot(data = pop_india, aes(x = Year, y = population))+ geom_line() 
+p3 + ggtitle("Fig. 3 - India population over time") + xlab("Year") + ylab("Population") + scale_y_continuous(labels = scales::comma)
+
+pop_india <- subset(df_10yr, df_10yr$Country == "India")
+#nrow(pop_india)
+#library(ggplot2)
+p4 <- ggplot(data = pop_india, aes(x = Year, y = income))+ geom_line() 
+p4 + ggtitle("Fig. 4 - India income over time") + xlab("Year") + ylab("Income") + scale_y_continuous(labels = scales::comma)
+
+pop_usa <- subset(df_10yr, df_10yr$Country == "United States")
+#nrow(pop_usa)
+#library(ggplot2)
+p5 <- ggplot(data = pop_usa, aes(x = Year, y = population))+ geom_line() 
+p5 + ggtitle("Fig. 5 - USA population over time") + xlab("Year") + ylab("Population") + scale_y_continuous(labels = scales::comma)
+
+p6 <- ggplot(data = pop_usa, aes(x = Year, y = income))+ geom_line() 
+p6 + ggtitle("Fig. 6 - USA income over time") + xlab("Year") + ylab("Income") + scale_y_continuous(labels = scales::comma)
+
+boxplot(life~Country, data= df_10yr, subset = Country== list("China", "India", "United States"), main = "Fig. 7 - Life Expectancy Distribution", xlab = "Country" , ylab = "Life")
+
+
+```
+## Cluster Analysis
+After performing cluster analysis on income and population on the entire data set, it is observed that the data set can divided into 2 clusters, namely low population-high income and high population-low income.  
+
+```{r clusters, echo=FALSE}
+df_clust <- df_10yr[,c(4,5)]
+df_clust <- subset(df_clust, is.na(df_clust$population)== FALSE)
+df_clust <- subset(df_clust, is.na(df_clust$income)== FALSE)
+#sum(is.na(df_clust))
+#head(df_clust)
+#install.packages("factoextra")
+library(factoextra)
+fviz_nbclust(df_clust, kmeans, method = "wss", nstart=20)
+cluster_1 <- kmeans(df_clust, centers = 2)
+
+fviz_cluster(cluster_1,geom="point", data = df_clust) + ggtitle("Fig. 8 - Cluster with 2 centers") + xlab ("population") + ylab("Income")
+
+```
+
+#Summary
+
+Based on the above analysis, it can be concluded that countries with high population tend to have lower income as well as lower life expectancy.
